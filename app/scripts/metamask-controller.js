@@ -4783,17 +4783,19 @@ export default class MetamaskController extends EventEmitter {
     const releaseLock = await this.createVaultMutex.acquire();
     try {
       const { completedOnboarding } = this.onboardingController.state;
+      const { useExternalServices } = this.preferencesController.state;
 
       const seedPhraseAsBuffer = Buffer.from(encodedSeedPhrase);
 
       // clear permissions
       this.permissionController.clearState();
 
-      // Clear snap state
-      await this.snapController.clearState();
+      if (useExternalServices) {
+        await this.snapController.clearState();
 
-      // Clear account tree state
-      this.accountTreeController.clearState();
+        // Clear account tree state
+        this.accountTreeController.clearState();
+      }
 
       // Currently, the account-order-controller is not in sync with
       // the accounts-controller. To properly persist the hidden state
@@ -4845,7 +4847,10 @@ export default class MetamaskController extends EventEmitter {
       );
 
       if (completedOnboarding) {
-        if (this.isMultichainAccountsFeatureState2Enabled()) {
+        if (
+          this.isMultichainAccountsFeatureState2Enabled() &&
+          useExternalServices
+        ) {
           ///: BEGIN:ONLY_INCLUDE_IF(keyring-snaps)
           await this.getSnapKeyring();
           ///: END:ONLY_INCLUDE_IF
